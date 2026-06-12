@@ -11,6 +11,9 @@ reports/
 reports/models/
 reports/logs/
 reports/images/
+notebooks/
+
+*.ipynb
 
 # If you want to be extra strict:
 *.pkl
