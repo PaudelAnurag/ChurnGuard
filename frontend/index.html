@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChurnGuard • Predictor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bs-body-bg: #0f172a;
+      --bs-body-color: #f1f5f9;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --input-bg: #273449;
+      --accent: #6366f1;
+      --accent2: #22d3ee;
+    }
+
+    body {
+      background: var(--bs-body-bg);
+      color: var(--bs-body-color);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .app-title {
+      font-size: 2.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0f172a;
+    }
+
+    .card {
+      background: var(--card-bg) !important;
+      border: 1px solid var(--card-border) !important;
+      border-radius: 16px !important;
+    }
+
+    .card-header {
+      background: transparent !important;
+      border-bottom: 1px solid var(--card-border) !important;
+      color: var(--accent2);
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    .form-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #94a3b8;
+    }
+
+    .form-control, .form-select {
+      background: var(--input-bg) !important;
+      border: 1.5px solid var(--card-border) !important;
+      color: var(--bs-body-color) !important;
+      border-radius: 10px !important;
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.25) !important;
+    }
+
+    .form-select option { background: #1e293b; }
+
+    .btn-predict {
+      background: linear-gradient(135deg, var(--accent), #818cf8);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      padding: 12px 28px;
+      transition: all 0.3s;
+    }
+    .btn-predict:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(99,102,241,.4); color: white; }
+
+    .btn-outline-secondary {
+      border-color: var(--card-border) !important;
+      color: #94a3b8 !important;
+      border-radius: 12px !important;
+    }
+    .btn-outline-secondary:hover { border-color: var(--accent2) !important; color: var(--accent2) !important; }
+
+    #resultCard { display: none; }
+
+    .verdict { font-size: 2rem; font-weight: 800; }
+    .verdict-churn { color: #f43f5e; }
+    .verdict-stay { color: #10b981; }
+
+    .prob-bar {
+      height: 16px;
+      background: #334155;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .prob-fill {
+      height: 100%;
+      transition: width 1s ease;
+      border-radius: 999px;
+    }
+    .prob-fill.churn { background: linear-gradient(90deg, #f43f5e, #fb7185); }
+    .prob-fill.safe  { background: linear-gradient(90deg, #10b981, #34d399); }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #475569;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #1e293b;
+    }
+  </style>
+</head>
+<body>
+<div class="container" style="max-width:1100px">
+
+  <div class="text-center mb-4">
+    <div class="app-title">ChurnGuard</div>
+    <p class="text-secondary mt-1">Real-time Customer Churn Prediction</p>
+  </div>
+
+  <!-- Model Selector -->
+  <div class="card mb-4">
+    <div class="card-header px-4 py-3"><i class="bi bi-cpu me-2"></i>Select Model</div>
+    <div class="card-body px-4 py-3">
+      <select id="modelSelect" class="form-select" style="max-width:420px; border: 2px solid var(--accent) !important; font-weight:600;"></select>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="card mb-4">
+    <div class="card-header px-4 py-3"><i class="bi bi-person-lines-fill me-2"></i>Customer Details</div>
+    <div class="card-body px-4 py-3">
+
+      <!-- Demographics -->
+      <div class="section-label">Demographics</div>
+      <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+          <label class="form-label">Gender</label>
+          <select id="gender" class="form-select">
+            <option value="0">Female</option>
+            <option value="1">Male</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Senior Citizen</label>
+          <select id="SeniorCitizen" class="form-select">
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Partner</label>
+          <select id="Partner" class="form-select">
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Dependents</label>
+          <select id="Dependents" class="form-select">
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Tenure (months)</label>
+          <input type="number" id="tenure" class="form-control" value="24" min="0" max="72" />
+        </div>
+      </div>
+
+      <!-- Phone & Internet -->
+      <div class="section-label">Phone & Internet Services</div>
+      <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+          <label class="form-label">Phone Service</label>
+          <select id="PhoneService" class="form-select">
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Multiple Lines</label>
+          <select id="MultipleLines" class="form-select">
+            <option value="No phone service">No phone service</option>
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Internet Service</label>
+          <select id="InternetService" class="form-select">
+            <option value="DSL">DSL</option>
+            <option value="Fiber optic" selected>Fiber optic</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Online Security</label>
+          <select id="OnlineSecurity" class="form-select">
+            <option value="No internet service">No internet service</option>
+            <option value="No" selected>No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Online Backup</label>
+          <select id="OnlineBackup" class="form-select">
+            <option value="No internet service">No internet service</option>
+            <option value="No" selected>No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Device Protection</label>
+          <select id="DeviceProtection" class="form-select">
+            <option value="No internet service">No internet service</option>
+            <option value="No" selected>No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Tech Support</label>
+          <select id="TechSupport" class="form-select">
+            <option value="No internet service">No internet service</option>
+            <option value="No" selected>No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Streaming TV</label>
+          <select id="StreamingTV" class="form-select">
+            <option value="No internet service">No internet service</option>
+            <option value="No" selected>No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Streaming Movies</label>
+          <select id="StreamingMovies" class="form-select">
+            <option value="No internet service">No internet service</option>
+            <option value="No" selected>No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Billing -->
+      <div class="section-label">Contract & Billing</div>
+      <div class="row g-3">
+        <div class="col-md-3 col-6">
+          <label class="form-label">Contract</label>
+          <select id="Contract" class="form-select">
+            <option value="0">Month-to-month</option>
+            <option value="1">One year</option>
+            <option value="2">Two year</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Paperless Billing</label>
+          <select id="PaperlessBilling" class="form-select">
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Payment Method</label>
+          <select id="PaymentMethod" class="form-select">
+            <option value="Electronic check">Electronic check</option>
+            <option value="Mailed check">Mailed check</option>
+            <option value="Bank transfer (automatic)">Bank transfer (auto)</option>
+            <option value="Credit card (automatic)">Credit card (auto)</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Monthly Charges ($)</label>
+          <input type="number" id="MonthlyCharges" class="form-control" value="70.35" step="0.01" />
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label">Total Charges ($)</label>
+          <input type="number" id="TotalCharges" class="form-control" value="1680.25" step="0.01" />
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="d-flex gap-3 flex-wrap mb-4">
+    <button class="btn btn-predict" onclick="predict()"><i class="bi bi-rocket-takeoff me-2"></i>Predict Churn</button>
+    <button class="btn btn-outline-secondary" onclick="resetForm()"><i class="bi bi-arrow-counterclockwise me-2"></i>Reset</button>
+    <button class="btn btn-outline-secondary" onclick="randomize()"><i class="bi bi-shuffle me-2"></i>Random Example</button>
+  </div>
+
+  <!-- Result -->
+  <div class="card mb-5" id="resultCard">
+    <div class="card-header px-4 py-3"><i class="bi bi-graph-up-arrow me-2"></i>Prediction Result</div>
+    <div class="card-body px-4 py-3" id="resultContent"></div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body fw-semibold" id="toastMsg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const API = "http://localhost:8000";
+
+  // Fields that are int (select with 0/1/2)
+  const INT_FIELDS  = ["gender","SeniorCitizen","Partner","Dependents","PhoneService","Contract","PaperlessBilling"];
+  // Fields that are float
+  const FLOAT_FIELDS = ["MonthlyCharges","TotalCharges"];
+  // int non-select
+  const INT_INPUT   = ["tenure"];
+
+  async function loadModels() {
+    try {
+      const res  = await fetch(`${API}/models`);
+      const data = await res.json();
+      const sel  = document.getElementById("modelSelect");
+      sel.innerHTML = data.models.map(m => {
+        const label = m.replace(/_/g," ").replace(/\b\w/g, c => c.toUpperCase());
+        return `<option value="${m}">${label}</option>`;
+      }).join("");
+    } catch {
+      showToast("Cannot connect to backend. Start your FastAPI server.");
+    }
+  }
+
+  async function predict() {
+    const model_name = document.getElementById("modelSelect").value;
+    if (!model_name) { showToast("Please select a model"); return; }
+
+    const allIds = [...INT_FIELDS, ...INT_INPUT, ...FLOAT_FIELDS,
+      "MultipleLines","InternetService","OnlineSecurity","OnlineBackup",
+      "DeviceProtection","TechSupport","StreamingTV","StreamingMovies","PaymentMethod"];
+
+    const payload = { model_name };
+
+    for (const id of allIds) {
+      const val = document.getElementById(id).value;
+      if (INT_FIELDS.includes(id) || INT_INPUT.includes(id)) {
+        payload[id] = parseInt(val, 10);
+      } else if (FLOAT_FIELDS.includes(id)) {
+        payload[id] = parseFloat(val);
+      } else {
+        payload[id] = val;
+      }
+    }
+
+    try {
+      const res  = await fetch(`${API}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (data.detail) { showToast(data.detail); return; }
+
+      const isChurn = data.prediction === 1;
+      const prob    = data.probability || 0;
+      const pct     = (prob * 100).toFixed(1);
+
+      document.getElementById("resultContent").innerHTML = `
+        <div class="row align-items-center g-4">
+          <div class="col-auto">
+            <div class="verdict ${isChurn ? "verdict-churn" : "verdict-stay"}">
+              ${isChurn ? "⚠️ High Churn Risk" : "✅ Low Churn Risk"}
+            </div>
+            <p class="text-secondary mt-2 mb-0">Model: <strong class="text-light">${data.model.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase())}</strong></p>
+          </div>
+          <div class="col">
+            <p class="fw-semibold mb-1">Churn Probability</p>
+            <div class="prob-bar">
+              <div class="prob-fill ${isChurn ? "churn" : "safe"}" style="width:${pct}%"></div>
+            </div>
+            <p style="font-size:1.5rem; font-weight:700; margin-top:6px">${pct}%</p>
+          </div>
+        </div>`;
+
+      const rc = document.getElementById("resultCard");
+      rc.style.display = "block";
+      rc.scrollIntoView({ behavior: "smooth" });
+    } catch {
+      showToast("Prediction failed. Is the API running?");
+    }
+  }
+
+  function resetForm() {
+    document.getElementById("resultCard").style.display = "none";
+    // Reset all selects to first option
+    document.querySelectorAll("select:not(#modelSelect)").forEach(s => s.selectedIndex = 0);
+    document.getElementById("tenure").value        = "24";
+    document.getElementById("MonthlyCharges").value = "70.35";
+    document.getElementById("TotalCharges").value   = "1680.25";
+  }
+
+  function randomize() {
+    // Binary selects
+    ["gender","SeniorCitizen","Partner","Dependents","PhoneService","PaperlessBilling"]
+      .forEach(id => { const s = document.getElementById(id); s.selectedIndex = Math.round(Math.random()); });
+    // Contract 0/1/2
+    document.getElementById("Contract").selectedIndex = Math.floor(Math.random()*3);
+    // Multi-option selects
+    ["MultipleLines","InternetService","OnlineSecurity","OnlineBackup",
+     "DeviceProtection","TechSupport","StreamingTV","StreamingMovies","PaymentMethod"]
+      .forEach(id => {
+        const s = document.getElementById(id);
+        s.selectedIndex = Math.floor(Math.random() * s.options.length);
+      });
+    document.getElementById("tenure").value         = Math.floor(Math.random()*72);
+    document.getElementById("MonthlyCharges").value = (Math.random()*100+18).toFixed(2);
+    document.getElementById("TotalCharges").value   = (Math.random()*8000+100).toFixed(2);
+  }
+
+  function showToast(msg) {
+    document.getElementById("toastMsg").textContent = msg;
+    new bootstrap.Toast(document.getElementById("errorToast"), { delay: 3500 }).show();
+  }
+
+  loadModels();
+</script>
+</body>
+</html>

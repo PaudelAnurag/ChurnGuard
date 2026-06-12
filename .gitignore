@@ -1,0 +1,22 @@
+# Environment
+env/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# ML artifacts
+reports/
+reports/models/
+reports/logs/
+reports/images/
+
+# If you want to be extra strict:
+*.pkl
+*.h5
+*.joblib
+
+# OS files
+.DS_Store
+Thumbs.db
